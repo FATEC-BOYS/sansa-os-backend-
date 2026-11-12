@@ -41,7 +41,7 @@ app.get("/health", async (_request, reply) => {
 app.get("/api/overview", async () => {
   const [leads, approvals, activities] = await Promise.all([
     prisma.lead.findMany({orderBy: {updatedAt: "desc"}, take: 200}),
-    prisma.approval.findMany({orderBy: {createdAt: "desc"}, take: 50}),
+    prisma.approval.findMany({orderBy: {createdAt: "desc"}, take: 50,include:{prospect:{select:{id:true,name:true,contactEmail:true,contactWhatsapp:true}}}}),
     prisma.activity.findMany({orderBy: {createdAt: "desc"}, take: 20})
   ]);
   const latestSync = await prisma.activity.findFirst({where: {kind: "crm_synced"},orderBy: {createdAt: "desc"}});
@@ -61,7 +61,7 @@ app.get("/api/leads", async () =>
 );
 
 app.get("/api/approvals", async () =>
-  prisma.approval.findMany({orderBy: {createdAt: "desc"},take: 100})
+  prisma.approval.findMany({orderBy: {createdAt: "desc"},take: 100,include:{prospect:{select:{id:true,name:true,contactEmail:true,contactWhatsapp:true}}}})
 );
 
 const newDraft = z.object({

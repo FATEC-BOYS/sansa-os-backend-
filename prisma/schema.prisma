@@ -41,6 +41,7 @@ model Approval {
   status     String    @default("pending")
   createdAt  DateTime  @default(now())
   reviewedAt DateTime?
+  channel    String?
   prospectId String?
   prospect   LocalProspect? @relation(fields: [prospectId], references: [id], onDelete: SetNull)
 }
@@ -53,6 +54,8 @@ model LocalProspect {
   latitude        Float
   longitude       Float
   website         String?
+  contactEmail    String?
+  contactWhatsapp String?
   socialListed    Boolean @default(false)
   priorityScore   Int
   scoreEvidence   String @db.Text

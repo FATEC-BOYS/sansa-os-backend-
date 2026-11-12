@@ -64,3 +64,12 @@ A aba **Radar local** pesquisa negócios numa área delimitada (padrão: Praça 
 Campos de `website` vazios no OSM **não comprovam que a empresa não tenha site**; a pontuação é prioridade preliminar de pesquisa, não avaliação de qualidade. A eventual proposta não afirma falhas ou benefícios que não foram comprovados. Dados OSM: © OpenStreetMap contributors, ODbL. Consulte a política do provedor Overpass; instâncias públicas servem a consultas moderadas, não prospecção contínua em escala. Para produção, use instância própria ou serviço comercial adequado. Referências: https://wiki.openstreetmap.org/wiki/Overpass_API e https://osmfoundation.org/wiki/Attribution_Guidelines.
 
 Não há integração automática com Gmail ou automações do ChatGPT. Antes de publicar dados internos, configure login/RBAC e deixe os repositórios privados.
+
+## Propostas por WhatsApp ou e-mail (v0.3)
+- `PATCH /api/discovery/prospects/:id/contacts` — cadastrar/alterar/apagar `email` e/ou `whatsapp` de um comércio já salvo para investigação. Apenas contatos comerciais, informados manualmente. Número brasileiro com DDD; armazenado em E.164.
+- `POST /api/discovery/prospects/:id/draft` — exige `{"channel":"email"}` ou `{"channel":"whatsapp"}` e contato correspondente previamente registrado. Cria rascunho específico ao canal; nunca envia.
+- `GET /api/approvals` e `GET /api/overview` — incluem canal e contato comercial atual do prospect para montar o link de envio manual **após aprovação**.
+- O frontend abre `https://wa.me/<número>?text=<mensagem>` ou `mailto:` com assunto e corpo preenchidos. O clique não prova envio e não atualiza status automaticamente.
+- Ao alterar o número/e-mail, o botão de abertura usa o endereço atualizado, sem reescrever o corpo do rascunho. Revise sempre antes de enviar.
+- O CRM principal no Google Sheets não é alterado; a fila local armazena esses contatos apenas na base protegida do SANSA OS.
+- Não existe integração com WhatsApp Business API nem Gmail SMTP/API para enviar automaticamente. São necessárias integrações, consentimento, política antispam e logs para isso.

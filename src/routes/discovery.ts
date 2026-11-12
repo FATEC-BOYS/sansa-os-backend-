@@ -3,6 +3,7 @@ import type {PrismaClient} from "@prisma/client";
 import {z} from "zod";
 import {CandidateInput,SearchInput,normalizeName,searchOsm,scoreCandidate} from "../lib/discovery.js";
 import {assessProspect} from "../lib/proposals.js";
+import {validateContacts} from "../lib/contacts.js";
 
 export function registerDiscoveryRoutes(app:FastifyInstance,prisma:PrismaClient) {
   app.post("/api/discovery/search",async (request,reply)=>{
@@ -58,19 +59,42 @@ export function registerDiscoveryRoutes(app:FastifyInstance,prisma:PrismaClient)
     return reply.code(201).send(prospect);
   });
 
+
+  app.patch<{Params:{id:string}}>("/api/discovery/prospects/:id/contacts",async (request,reply)=>{
+    let contacts:{contactEmail?:string|null;contactWhatsapp?:string|null};
+    try{
+      contacts=validateContacts(request.body);
+    }catch{
+      return reply.code(400).send({error:"E-mail ou WhatsApp inválido. Use e-mail válido e telefone brasileiro com DDD."});
+    }
+    const updated=await prisma.localProspect.updateMany({where:{id:request.params.id},data:contacts});
+    if(!updated.count)return reply.code(404).send({error:"Comércio não encontrado"});
+    const prospect=await prisma.localProspect.findUniqueOrThrow({where:{id:request.params.id}});
+    await prisma.activity.create({data:{
+      kind:"prospect_contacts_updated",
+      message:`Contatos comerciais de ${prospect.name} atualizados manualmente (sem envio).`
+    }});
+    return prospect;
+  });
+
   app.post<{Params:{id:string}}>("/api/discovery/prospects/:id/draft",async (request,reply)=>{
+    const validated=z.object({channel:z.enum(["email","whatsapp"])}).strict().safeParse(request.body);
+    if(!validated.success)return reply.code(400).send({error:"Selecione e-mail ou WhatsApp para a proposta"});
+    const channel=validated.data.channel;
     const prospect=await prisma.localProspect.findUnique({where:{id:request.params.id}});
     if(!prospect)return reply.code(404).send({error:"Comércio não encontrado"});
+    const recipient=channel==="email"?prospect.contactEmail:prospect.contactWhatsapp;
+    if(!recipient)return reply.code(422).send({error:`Cadastre um ${channel==="email"?"e-mail":"WhatsApp"} comercial antes de gerar a proposta.`});
     // Never auto-send. Existing pending drafts are returned to avoid duplication.
     const existing=await prisma.approval.findFirst({
-      where:{prospectId:prospect.id,status:"pending"},orderBy:{createdAt:"desc"}
+      where:{prospectId:prospect.id,status:"pending",channel},orderBy:{createdAt:"desc"}
     });
     if(existing)return {reused:true,approval:existing,mode:prospect.analysisMode||"unknown"};
     let output:Awaited<ReturnType<typeof assessProspect>>;
     try {
       output=await assessProspect({
         name:prospect.name,category:prospect.category,website:prospect.website,
-        socialListed:prospect.socialListed,score:prospect.priorityScore,evidence:prospect.scoreEvidence
+        socialListed:prospect.socialListed,score:prospect.priorityScore,evidence:prospect.scoreEvidence,channel
       });
     } catch(error) {
       app.log.warn({reason:error instanceof Error?error.name:"unknown"},"Prospect assessment failed");
@@ -81,12 +105,13 @@ export function registerDiscoveryRoutes(app:FastifyInstance,prisma:PrismaClient)
         analysisMode:output.mode,analysisSummary:output.assessment.rationale
       }});
       const approval=await transaction.approval.create({data:{
-        agent:"commercial",kind:"email_draft",title:output.assessment.subject,
+        agent:"commercial",kind:channel==="email"?"email_draft":"whatsapp_draft",
+        channel,title:output.assessment.subject,
         summary:`Proposta de ${output.assessment.service.replaceAll("_"," ")} para ${prospect.name} — verificação manual necessária.`,
         content:output.assessment.body,prospectId:savedProspect.id,status:"pending"
       }});
       await transaction.activity.create({data:{
-        kind:"local_proposal_drafted",message:`Rascunho para ${prospect.name} gerado (${output.mode==="ai"?"IA":"regras"}). Não enviado.`
+        kind:"local_proposal_drafted",message:`Rascunho de ${channel==="email"?"e-mail":"WhatsApp"} para ${prospect.name} gerado (${output.mode==="ai"?"IA":"regras"}). Não enviado.`
       }});
       return approval;
     });
