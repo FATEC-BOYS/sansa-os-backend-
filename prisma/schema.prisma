@@ -41,7 +41,29 @@ model Approval {
   status     String    @default("pending")
   createdAt  DateTime  @default(now())
   reviewedAt DateTime?
+  prospectId String?
+  prospect   LocalProspect? @relation(fields: [prospectId], references: [id], onDelete: SetNull)
 }
+
+model LocalProspect {
+  id              String @id @default(cuid())
+  sourceKey       String @unique
+  name            String
+  category        String
+  latitude        Float
+  longitude       Float
+  website         String?
+  socialListed    Boolean @default(false)
+  priorityScore   Int
+  scoreEvidence   String @db.Text
+  status          String @default("shortlisted")
+  analysisMode    String?
+  analysisSummary String? @db.Text
+  approvals       Approval[]
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
 
 model Activity {
   id        String   @id @default(cuid())

@@ -48,3 +48,19 @@ Não confunda integração do SANSA OS com tarefas externas do ChatGPT: as autom
 
 ## Segurança e deploy
 Os repositórios foram identificados como **públicos** durante a criação inicial. Não comite `.env`, chaves de service account, conteúdo do CRM ou dados de clientes. Configure repositórios privados e autenticação real de usuário antes de um deploy aberto na internet. O `INTERNAL_API_KEY` é um controle interno para comunicação servidor-servidor, **não substitui login, RBAC ou proteção de acesso público**.
+
+## Radar de comércios locais — v0.2
+
+A aba **Radar local** pesquisa negócios numa área delimitada (padrão: Praça da Matriz, Centro de São Bernardo do Campo), prioriza oportunidades de investigação e prepara propostas específicas para revisão.
+
+**Fluxo real:** busca manual OSM/Overpass → pontuação explicável baseada somente nos dados disponíveis → salvar na fila de pesquisa → gerar análise e rascunho (OpenAI opcional) → aprovação humana interna. Sem autoenvio, scraping de contatos ou mensagens em massa. O CRM Google Sheets continua sendo a fonte oficial de clientes; a fila `LocalProspect` é apenas para **pesquisa**, não substitui o CRM.
+
+### API
+- `POST /api/discovery/search` — dados públicos OSM em até 3 km de um ponto; mínimo 60s entre chamadas nesta instância; limite de resultados; nunca agenda buscas.
+- `GET /api/discovery/prospects` — oportunidades escolhidas pela fundadora.
+- `POST /api/discovery/prospects` — salva um estabelecimento selecionado para pesquisa, com deduplicação de ID OSM.
+- `POST /api/discovery/prospects/:id/draft` — avalia a oportunidade e cria rascunho em Aprovações. Com `OPENAI_API_KEY`, usa Responses API e saída estruturada; sem chave, entrega uma versão conservadora por regras e sinaliza o modo. Se houver erro da API, não apresenta resposta fictícia como IA.
+
+Campos de `website` vazios no OSM **não comprovam que a empresa não tenha site**; a pontuação é prioridade preliminar de pesquisa, não avaliação de qualidade. A eventual proposta não afirma falhas ou benefícios que não foram comprovados. Dados OSM: © OpenStreetMap contributors, ODbL. Consulte a política do provedor Overpass; instâncias públicas servem a consultas moderadas, não prospecção contínua em escala. Para produção, use instância própria ou serviço comercial adequado. Referências: https://wiki.openstreetmap.org/wiki/Overpass_API e https://osmfoundation.org/wiki/Attribution_Guidelines.
+
+Não há integração automática com Gmail ou automações do ChatGPT. Antes de publicar dados internos, configure login/RBAC e deixe os repositórios privados.

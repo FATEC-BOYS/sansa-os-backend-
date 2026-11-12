@@ -6,6 +6,7 @@ import { timingSafeEqual } from "node:crypto";
 import { z } from "zod";
 import { agents } from "./lib/agents.js";
 import { parseLeadRow, summarizeLeads } from "./lib/crm.js";
+import { registerDiscoveryRoutes } from "./routes/discovery.js";
 
 const prisma = new PrismaClient();
 const app = Fastify({logger: true});
@@ -137,6 +138,8 @@ function requestErrorLog(error: unknown) {
   // Evite registrar objetos de credenciais ou tokens; somente uma descrição genérica.
   app.log.error({errorType: error instanceof Error ? error.name : "Unknown"}, "CRM sync failed");
 }
+
+registerDiscoveryRoutes(app,prisma);
 
 const port = Number(process.env.PORT ?? 3333);
 const host = process.env.HOST ?? "127.0.0.1";
