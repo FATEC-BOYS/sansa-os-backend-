@@ -46,7 +46,7 @@ model Approval {
   prospect   LocalProspect? @relation(fields: [prospectId], references: [id], onDelete: SetNull)
   conversationId String?
   conversation WhatsAppConversation? @relation(fields: [conversationId], references: [id], onDelete: SetNull)
-  mailMessageId String? @unique
+  mailMessageId String?
   mailMessage MailMessage? @relation(fields: [mailMessageId], references: [id], onDelete: SetNull)
 }
 
@@ -134,7 +134,7 @@ model MailMessage {
   category String
   receivedAt DateTime
   createdAt DateTime @default(now())
-  approval Approval?
+  approvals Approval[]
 
   @@unique([mailbox,uidValidity,uid])
   @@index([receivedAt])
