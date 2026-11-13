@@ -44,6 +44,8 @@ model Approval {
   channel    String?
   prospectId String?
   prospect   LocalProspect? @relation(fields: [prospectId], references: [id], onDelete: SetNull)
+  conversationId String?
+  conversation WhatsAppConversation? @relation(fields: [conversationId], references: [id], onDelete: SetNull)
 }
 
 model LocalProspect {
@@ -87,4 +89,32 @@ model AgentRun {
   updatedAt DateTime @updatedAt
 
   @@unique([agent, runDate])
+}
+
+model WhatsAppConversation {
+  id               String @id @default(cuid())
+  waId             String @unique
+  profileName      String?
+  stage            String @default("identifier")
+  intent           String?
+  validationStatus String @default("unverified")
+  optedOut         Boolean @default(false)
+  handoffRequired  Boolean @default(false)
+  lastInboundAt    DateTime?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+  messages         WhatsAppMessage[]
+  approvals        Approval[]
+}
+model WhatsAppMessage {
+  id             String @id @default(cuid())
+  metaMessageId  String @unique
+  conversationId String
+  conversation   WhatsAppConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  direction      String @default("inbound")
+  type           String
+  text           String? @db.Text
+  receivedAt     DateTime
+  createdAt      DateTime @default(now())
+  @@index([conversationId, receivedAt])
 }
