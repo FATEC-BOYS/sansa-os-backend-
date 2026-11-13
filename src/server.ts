@@ -11,6 +11,7 @@ import { registerDiscoveryRoutes } from "./routes/discovery.js";
 import { registerAgentRoutes } from "./routes/agents.js";
 import { registerMetaWhatsAppRoutes } from "./routes/meta-whatsapp.js";
 import { registerSalesRoutes } from "./routes/sales.js";
+import { registerZohoEmailRoutes } from "./routes/zoho-email.js";
 
 const prisma = new PrismaClient();
 const app = Fastify({logger: true});
@@ -164,6 +165,7 @@ registerDiscoveryRoutes(app,prisma);
 registerAgentRoutes(app,prisma);
 registerMetaWhatsAppRoutes(app,prisma);
 registerSalesRoutes(app,prisma);
+registerZohoEmailRoutes(app,prisma);
 
 const port = Number(process.env.PORT ?? 3333);
 const host = process.env.HOST ?? "127.0.0.1";

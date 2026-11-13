@@ -116,3 +116,15 @@ Regras Meta: business-initiated exige opt-in e templates aprovados; respostas li
 - `PATCH /api/sales/drafts/:id` — alteração de título/conteúdo de propostas pendentes, antes da aprovação.
 - Todos os documentos são gravados em Aprovações para revisão; nenhum e-mail, WhatsApp ou cobrança é emitido.
 - O agente comercial não pode fechar contratos, confirmar agenda, gerar Pix ou exigir dados financeiros. Pagamentos: futura integração com gateway autorizado (checkout, webhooks, conciliação).
+
+## Zoho Mail — caixa de entrada comercial (v0.7)
+As rotas `GET /api/email/status`, `GET /api/email/inbox` e `POST /api/email/sync` permitem integrar a caixa da SANSA via **IMAP somente leitura**, sem integração de envio ou SMTP. A API conecta a `imappro.zoho.com:993` com TLS e conta autorizada; todas as rotas exigem `INTERNAL_API_KEY`. Nenhum IMAP é aberto automaticamente sem a variável `ZOHO_IMAP_ENABLED=true`.
+
+1. Zoho Mail → Configurações → Contas de correio → IMAP → Habilitar; confirme que o plano permite acesso IMAP.
+2. Zoho Accounts → Segurança → Senhas específicas de aplicativo (se MFA habilitado). Gere uma senha chamada `SANSA OS`; **não use a senha principal**.
+3. Railway → `sansa-os-api` → Variables: `ZOHO_IMAP_ENABLED=true`, `ZOHO_IMAP_USER=alessandrasanches@sansadigital.com.br` (confirme o login real) e `ZOHO_IMAP_APP_PASSWORD=<senha privada>`. Configure `ZOHO_ALIAS_ADDRESSES` caso use outros aliases.
+4. SANSA OS → E-mail comercial → Sincronizar. Na primeira execução, carrega no máximo 10 mensagens recentes da pasta INBOX, dos últimos 14 dias, só endereçadas aos aliases comerciais. Cada mensagem é deduplicada por UIDVALIDITY+UID; sincronia não marca mensagens como lidas nem exclui nada na Zoho.
+5. A caixa do SANSA mostra remetente, assunto e prévia de até 1500 caracteres. Mensagens até 256 KB são analisadas localmente; maiores são marcadas para revisão no Zoho. Nenhum conteúdo é enviado a Claude/GPT; as respostas usam regras conservadoras e permanecem no painel Aprovações. Envio somente manual pelo Zoho após aprovação.
+6. A rotina do worker pode consultar esse endpoint quando a integração estiver configurada; ativar auto-poll requer a implantação do worker correspondente.
+
+**Dados/LGPD:** armazena conteúdo abreviado e endereço do remetente no PostgreSQL; implementar controle de acesso por usuário, retenção e exclusão antes de aumentar volume. Mensagens são dados não confiáveis, não instruções. Não ingere SPAM, não faz prospecção fria, não cria preços nem envia e-mails.
