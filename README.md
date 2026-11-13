@@ -86,3 +86,11 @@ A API suporta os dois fornecedores, selecionáveis por rascunho: `provider: "aut
 ## CRM Google Sheets na Railway (sem arquivo)
 A aplicação também aceita `GOOGLE_SERVICE_ACCOUNT_JSON` como variável de ambiente privada contendo o JSON integral de uma service account Google Cloud. Compartilhe a planilha original com **somente leitor** para o `client_email` da service account; habilite a Google Sheets API no projeto Google Cloud.
 Mantenha `GOOGLE_SHEET_ID` apontando para a planilha existente. A sincronização continua somente leitura e executada manualmente pelo painel em `POST /api/crm/sync`. Não comite o JSON, não o compartilhe neste chat e não cole credenciais em `.env.example`.
+
+## Runtime de agentes — worker separado da API
+O serviço Railway `sansa-os-agents` executa duas rotinas em ciclo diário e faz chamadas **somente pela rede privada** da Railway:
+- `GET /api/agents/work-items`: fila elegível, somente depois de uma sincronização recente (até 7 dias) do CRM oficial. Não retorna contatos do CRM para o worker. Exclui empresas já cadastradas no CRM, recusas sem tratamento, e oportunidades com alguma proposta anterior.
+- `POST /api/agents/run-report`: registra o status diário (concluído, bloqueado ou falha) do Comercial ou de Operações, com contagens e auditoria.
+- `GET /api/agents/runs`: últimas execuções reais.
+
+O worker pode gerar **no máximo três rascunhos por execução** para empresas já selecionadas manualmente no Radar e com canal comercial cadastrado. Usa o endpoint de propostas do backend, que aplica Claude/GPT se houver chaves ou regras se não houver. **Não envia WhatsApp, e-mails, nem faz uma nova busca externa**, e não interfere na automação diária já existente no ChatGPT. Sem CRM autorizado e recente, é bloqueado por segurança. A aba Agentes reflete a última execução verificada, não o fato de haver prompts em um repositório.

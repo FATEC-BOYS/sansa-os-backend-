@@ -74,3 +74,17 @@ model Activity {
   message   String
   createdAt DateTime @default(now())
 }
+
+model AgentRun {
+  id        String   @id @default(cuid())
+  agent     String
+  runDate   String
+  status    String
+  summary   String   @db.Text
+  processed Int      @default(0)
+  skipped   Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([agent, runDate])
+}

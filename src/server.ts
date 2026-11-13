@@ -7,6 +7,7 @@ import { z } from "zod";
 import { agents } from "./lib/agents.js";
 import { parseLeadRow, summarizeLeads } from "./lib/crm.js";
 import { registerDiscoveryRoutes } from "./routes/discovery.js";
+import { registerAgentRoutes } from "./routes/agents.js";
 
 const prisma = new PrismaClient();
 const app = Fastify({logger: true});
@@ -39,16 +40,22 @@ app.get("/health", async (_request, reply) => {
 });
 
 app.get("/api/overview", async () => {
-  const [leads, approvals, activities] = await Promise.all([
+  const [leads, approvals, activities, agentRuns] = await Promise.all([
     prisma.lead.findMany({orderBy: {updatedAt: "desc"}, take: 200}),
     prisma.approval.findMany({orderBy: {createdAt: "desc"}, take: 50,include:{prospect:{select:{id:true,name:true,contactEmail:true,contactWhatsapp:true}}}}),
-    prisma.activity.findMany({orderBy: {createdAt: "desc"}, take: 20})
+    prisma.activity.findMany({orderBy: {createdAt: "desc"}, take: 20}),
+    prisma.agentRun.findMany({orderBy:{updatedAt:"desc"},take:20})
   ]);
   const latestSync = await prisma.activity.findFirst({where: {kind: "crm_synced"},orderBy: {createdAt: "desc"}});
   return {
     metrics: summarizeLeads(leads),
     crm: {connected: Boolean(latestSync), lastSyncedAt: latestSync?.createdAt ?? null, source: "Google Sheets · Prospeccao", count: leads.length},
-    agents,
+    agents:agents.map(agent=>{
+      const last=agentRuns.find(run=>run.agent===agent.id);
+      const fresh=last && Date.now()-last.updatedAt.getTime()<36*60*60*1000;
+      return {...agent,status:fresh?(last.status==="completed"?"scheduled_active":"blocked"):"not_connected",lastRunAt:last?.updatedAt??null,lastRunStatus:last?.status??null};
+    }),
+    agentRuns,
     leads,
     approvals,
     activities,
@@ -149,6 +156,7 @@ function requestErrorLog(error: unknown) {
 }
 
 registerDiscoveryRoutes(app,prisma);
+registerAgentRoutes(app,prisma);
 
 const port = Number(process.env.PORT ?? 3333);
 const host = process.env.HOST ?? "127.0.0.1";
