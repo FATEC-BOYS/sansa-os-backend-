@@ -57,7 +57,6 @@ export function routeWhatsAppMessage(ctx:WhatsAppContext,text:string):RouteDecis
     agent:"after_service",stage:"after_service",intent,needsHuman:true,optedOut:false,
     draft:"Entendi. Vou registrar sua dúvida para a equipe conferir o histórico do projeto e retornar com a informação correta.",
     statusNote:"Pós-atendimento sujeito à verificação das fontes; documentos e pagamentos são manuais."};
-  }
   return {
     agent:"service",stage:"service",intent,needsHuman:false,optedOut:false,
     draft:"Olá! Sou a assistente digital da SANSA Oficina Digital. Trabalhamos com sites e landing pages, identidade visual e experiências digitais. O que você gostaria de criar ou melhorar? Se preferir, posso encaminhar sua conversa para uma pessoa da equipe.",
