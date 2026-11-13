@@ -78,7 +78,7 @@ export function registerDiscoveryRoutes(app:FastifyInstance,prisma:PrismaClient)
   });
 
   app.post<{Params:{id:string}}>("/api/discovery/prospects/:id/draft",async (request,reply)=>{
-    const validated=z.object({channel:z.enum(["email","whatsapp"])}).strict().safeParse(request.body);
+    const validated=z.object({channel:z.enum(["email","whatsapp"]),provider:z.enum(["auto","openai","anthropic","rules"]).default("auto")}).strict().safeParse(request.body);
     if(!validated.success)return reply.code(400).send({error:"Selecione e-mail ou WhatsApp para a proposta"});
     const channel=validated.data.channel;
     const prospect=await prisma.localProspect.findUnique({where:{id:request.params.id}});
@@ -95,10 +95,14 @@ export function registerDiscoveryRoutes(app:FastifyInstance,prisma:PrismaClient)
       output=await assessProspect({
         name:prospect.name,category:prospect.category,website:prospect.website,
         socialListed:prospect.socialListed,score:prospect.priorityScore,evidence:prospect.scoreEvidence,channel
-      });
+      },validated.data.provider);
     } catch(error) {
       app.log.warn({reason:error instanceof Error?error.name:"unknown"},"Prospect assessment failed");
-      return reply.code(502).send({error:"A análise por IA não concluiu. Nenhuma proposta foi gerada. Verifique a chave, o modelo e o limite da API."});
+      if(error instanceof Error && error.message==="ANTHROPIC_KEY_MISSING")
+        return reply.code(503).send({error:"Claude não configurado: adicione ANTHROPIC_API_KEY na Railway."});
+      if(error instanceof Error && error.message==="OPENAI_KEY_MISSING")
+        return reply.code(503).send({error:"GPT não configurado: adicione OPENAI_API_KEY na Railway."});
+      return reply.code(502).send({error:"A análise por IA não concluiu. Nenhuma proposta foi gerada. Verifique a chave, o modelo e os créditos disponíveis."});
     }
     const saved=await prisma.$transaction(async transaction=>{
       const savedProspect=await transaction.localProspect.update({where:{id:prospect.id},data:{
@@ -111,10 +115,10 @@ export function registerDiscoveryRoutes(app:FastifyInstance,prisma:PrismaClient)
         content:output.assessment.body,prospectId:savedProspect.id,status:"pending"
       }});
       await transaction.activity.create({data:{
-        kind:"local_proposal_drafted",message:`Rascunho de ${channel==="email"?"e-mail":"WhatsApp"} para ${prospect.name} gerado (${output.mode==="ai"?"IA":"regras"}). Não enviado.`
+        kind:"local_proposal_drafted",message:`Rascunho de ${channel==="email"?"e-mail":"WhatsApp"} para ${prospect.name} gerado (${output.provider}). Não enviado.`
       }});
       return approval;
     });
-    return reply.code(201).send({mode:output.mode,assessment:output.assessment,approval:saved});
+    return reply.code(201).send({mode:output.mode,provider:output.provider,assessment:output.assessment,approval:saved});
   });
 }

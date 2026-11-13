@@ -73,3 +73,16 @@ Não há integração automática com Gmail ou automações do ChatGPT. Antes de
 - Ao alterar o número/e-mail, o botão de abertura usa o endereço atualizado, sem reescrever o corpo do rascunho. Revise sempre antes de enviar.
 - O CRM principal no Google Sheets não é alterado; a fila local armazena esses contatos apenas na base protegida do SANSA OS.
 - Não existe integração com WhatsApp Business API nem Gmail SMTP/API para enviar automaticamente. São necessárias integrações, consentimento, política antispam e logs para isso.
+
+## Integração Claude + GPT (v0.4)
+A API suporta os dois fornecedores, selecionáveis por rascunho: `provider: "auto"|"anthropic"|"openai"|"rules"` junto de `channel` no endpoint `/api/discovery/prospects/:id/draft`.
+- `ANTHROPIC_API_KEY`, `ANTHROPIC_MODEL` (padrão `claude-sonnet-5-5`);
+- `OPENAI_API_KEY`, `OPENAI_MODEL` (padrão `gpt-5-mini`);
+- `AI_PROVIDER=auto`: usa Claude se configurado, senão GPT, senão regras. A seleção explícita de Claude/GPT sem chave retorna erro, sem fingir análise por IA.
+- Saída JSON estruturada e validada por Zod para ambos. Nenhuma chamada de IA aciona e-mail ou WhatsApp.
+- Crie chaves no Console Anthropic e na plataforma de API da OpenAI; assinatura de chat não é chave de API, e cobranças são independentes. Configure apenas em **Railway → sansa-os → sansa-os-api → Variables**.
+- Segurança: modelos recebem nome, segmento, sinais gerais e canal, não telefone/e-mail do contato. Trate nomes públicos como dados não confiáveis.
+
+## CRM Google Sheets na Railway (sem arquivo)
+A aplicação também aceita `GOOGLE_SERVICE_ACCOUNT_JSON` como variável de ambiente privada contendo o JSON integral de uma service account Google Cloud. Compartilhe a planilha original com **somente leitor** para o `client_email` da service account; habilite a Google Sheets API no projeto Google Cloud.
+Mantenha `GOOGLE_SHEET_ID` apontando para a planilha existente. A sincronização continua somente leitura e executada manualmente pelo painel em `POST /api/crm/sync`. Não comite o JSON, não o compartilhe neste chat e não cole credenciais em `.env.example`.

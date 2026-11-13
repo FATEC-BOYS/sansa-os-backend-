@@ -103,12 +103,21 @@ app.patch<{Params:{id:string}}>("/api/approvals/:id", async (request, reply) => 
 app.post("/api/crm/sync", async (_request, reply) => {
   const spreadsheetId = process.env.GOOGLE_SHEET_ID;
   const credentialPath = process.env.GOOGLE_APPLICATION_CREDENTIALS;
-  if (!spreadsheetId || !credentialPath) {
-    return reply.code(503).send({error:"CRM integration not configured. Set GOOGLE_SHEET_ID and GOOGLE_APPLICATION_CREDENTIALS."});
+  const credentialJson = process.env.GOOGLE_SERVICE_ACCOUNT_JSON;
+  if (!spreadsheetId || (!credentialPath && !credentialJson)) {
+    return reply.code(503).send({error:"Configure GOOGLE_SHEET_ID e GOOGLE_SERVICE_ACCOUNT_JSON no backend da Railway."});
   }
   try {
+    let credentials:Record<string,unknown>|undefined;
+    if(credentialJson){
+      const parsed:unknown=JSON.parse(credentialJson);
+      if(!parsed || typeof parsed!=="object" || !("client_email" in parsed) || !("private_key" in parsed))
+        throw new Error("Invalid service account credentials");
+      credentials=parsed as Record<string,unknown>;
+    }
     const auth = new google.auth.GoogleAuth({
-      keyFile: credentialPath, scopes: ["https://www.googleapis.com/auth/spreadsheets.readonly"]
+      ...(credentials?{credentials}:{keyFile:credentialPath}),
+      scopes: ["https://www.googleapis.com/auth/spreadsheets.readonly"]
     });
     const sheets = google.sheets({version:"v4",auth});
     const response = await sheets.spreadsheets.values.get({
