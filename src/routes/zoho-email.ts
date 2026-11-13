@@ -19,8 +19,9 @@ function targetAddress(addresses:string[]):string|null{
     .split(",").map(v=>v.trim().toLowerCase()).filter(Boolean));
   return addresses.find(a=>approved.has(a.toLowerCase()))??null;
 }
-function safeDate(value:Date|undefined|null):Date{
-  return value instanceof Date&&!Number.isNaN(value.getTime())?value:new Date();
+function safeDate(value:Date|string|undefined|null):Date{
+  const date=value instanceof Date?value:new Date(value??Date.now());
+  return Number.isNaN(date.getTime())?new Date():date;
 }
 function isDuplicate(error:unknown){
   return error instanceof Prisma.PrismaClientKnownRequestError && error.code==="P2002";
