@@ -94,3 +94,17 @@ O serviço Railway `sansa-os-agents` executa duas rotinas em ciclo diário e faz
 - `GET /api/agents/runs`: últimas execuções reais.
 
 O worker pode gerar **no máximo três rascunhos por execução** para empresas já selecionadas manualmente no Radar e com canal comercial cadastrado. Usa o endpoint de propostas do backend, que aplica Claude/GPT se houver chaves ou regras se não houver. **Não envia WhatsApp, e-mails, nem faz uma nova busca externa**, e não interfere na automação diária já existente no ChatGPT. Sem CRM autorizado e recente, é bloqueado por segurança. A aba Agentes reflete a última execução verificada, não o fato de haver prompts em um repositório.
+
+## Meta WhatsApp Cloud API — esqueleto de atendimento (v0.5)
+A SANSA implementa um recebimento seguro, **sem envios**:
+- `GET /api/webhooks/meta/whatsapp` valida `hub.mode`, token e challenge;
+- `POST /api/webhooks/meta/whatsapp` valida assinatura `X-Hub-Signature-256` sobre os **bytes originais** usando HMAC-SHA256, confirma Phone Number ID, deduplica `messages[].id`, registra mensagem e estágio, e cria somente rascunhos para revisão;
+- `GET /api/whatsapp/status`, `GET /api/whatsapp/conversations`, `GET /api/whatsapp/conversations/:id` exigem API key interna. Os listados mascaram o telefone do cliente, e não expõem tokens.
+- A rota pública só responde após configurar Meta no backend da Railway. Antes disso, **503**, sem assinatura/verify token **401/403**. Nunca abra rotas internas sem autenticação.
+
+**Fluxo por papéis:** Identificador → Validador (apenas quando houver dados restritos e fonte independente) → Atendimento → Negociação → Pós-atendimento. Solicitações de dinheiro ou Pix obrigam encaminhamento humano; sem geração automática de boleto/Pix. Opt-out interrompe rascunhos. Nenhum CPF completo é solicitado.
+
+**Configuração futura:** Railway `sansa-os-api` → Variables:
+`META_VERIFY_TOKEN` (segredo aleatório para challenge), `META_APP_SECRET` (da Meta), `META_WA_PHONE_NUMBER_ID`, depois `META_WABA_ID` e `META_WA_ACCESS_TOKEN`. A integração de envio não está implementada, mesmo que `META_WA_SEND_ENABLED=true` seja definido. No Meta App Dashboard, aponte o Webhook callback para `https://<domínio público da API>/api/webhooks/meta/whatsapp` e assine o campo `messages`. O frontend comunica-se com a API via rede privada, porém o webhook exige um domínio público só para o endpoint da Meta (todas as demais rotas seguem protegidas por chave interna).
+
+Regras Meta: business-initiated exige opt-in e templates aprovados; respostas livres são permitidas em janela de 24h. O sistema **não inicia conversas**, não tem integração de cobrança nem atualização automática do CRM oficial.

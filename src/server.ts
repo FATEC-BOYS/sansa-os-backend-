@@ -1,5 +1,6 @@
 import "dotenv/config";
 import Fastify from "fastify";
+import rawBodyPlugin from "fastify-raw-body";
 import { google } from "googleapis";
 import { PrismaClient } from "@prisma/client";
 import { timingSafeEqual } from "node:crypto";
@@ -8,9 +9,11 @@ import { agents } from "./lib/agents.js";
 import { parseLeadRow, summarizeLeads } from "./lib/crm.js";
 import { registerDiscoveryRoutes } from "./routes/discovery.js";
 import { registerAgentRoutes } from "./routes/agents.js";
+import { registerMetaWhatsAppRoutes } from "./routes/meta-whatsapp.js";
 
 const prisma = new PrismaClient();
 const app = Fastify({logger: true});
+await app.register(rawBodyPlugin,{field:"rawBody",global:false,encoding:false,runFirst:true});
 const key = process.env.INTERNAL_API_KEY ?? "";
 
 function validSecret(candidate: unknown): boolean {
@@ -21,7 +24,8 @@ function validSecret(candidate: unknown): boolean {
 }
 
 app.addHook("onRequest", async (request, reply) => {
-  if (request.url === "/health") return;
+  const path=request.url.split("?")[0];
+  if (path === "/health" || path === "/api/webhooks/meta/whatsapp") return;
   if (!key || key.length < 24 || key === "replace-with-a-long-random-secret") {
     return reply.code(503).send({error: "INTERNAL_API_KEY not configured securely"});
   }
@@ -157,6 +161,7 @@ function requestErrorLog(error: unknown) {
 
 registerDiscoveryRoutes(app,prisma);
 registerAgentRoutes(app,prisma);
+registerMetaWhatsAppRoutes(app,prisma);
 
 const port = Number(process.env.PORT ?? 3333);
 const host = process.env.HOST ?? "127.0.0.1";
