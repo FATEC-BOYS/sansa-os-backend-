@@ -10,6 +10,7 @@ import { parseLeadRow, summarizeLeads } from "./lib/crm.js";
 import { registerDiscoveryRoutes } from "./routes/discovery.js";
 import { registerAgentRoutes } from "./routes/agents.js";
 import { registerMetaWhatsAppRoutes } from "./routes/meta-whatsapp.js";
+import { registerSalesRoutes } from "./routes/sales.js";
 
 const prisma = new PrismaClient();
 const app = Fastify({logger: true});
@@ -162,6 +163,7 @@ function requestErrorLog(error: unknown) {
 registerDiscoveryRoutes(app,prisma);
 registerAgentRoutes(app,prisma);
 registerMetaWhatsAppRoutes(app,prisma);
+registerSalesRoutes(app,prisma);
 
 const port = Number(process.env.PORT ?? 3333);
 const host = process.env.HOST ?? "127.0.0.1";

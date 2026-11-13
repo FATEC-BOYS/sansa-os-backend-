@@ -108,3 +108,11 @@ A SANSA implementa um recebimento seguro, **sem envios**:
 `META_VERIFY_TOKEN` (segredo aleatório para challenge), `META_APP_SECRET` (da Meta), `META_WA_PHONE_NUMBER_ID`, depois `META_WABA_ID` e `META_WA_ACCESS_TOKEN`. A integração de envio não está implementada, mesmo que `META_WA_SEND_ENABLED=true` seja definido. No Meta App Dashboard, aponte o Webhook callback para `https://<domínio público da API>/api/webhooks/meta/whatsapp` e assine o campo `messages`. O frontend comunica-se com a API via rede privada, porém o webhook exige um domínio público só para o endpoint da Meta (todas as demais rotas seguem protegidas por chave interna).
 
 Regras Meta: business-initiated exige opt-in e templates aprovados; respostas livres são permitidas em janela de 24h. O sistema **não inicia conversas**, não tem integração de cobrança nem atualização automática do CRM oficial.
+
+## Estúdio comercial — propostas e negociação (v0.6)
+- `GET /api/sales/catalog` — catálogo versionado (landing page, site institucional, identidade visual, UI/UX e redesign), cada serviço com escopo Essencial, Completo e Sob medida. **Nenhum preço fictício**.
+- `POST /api/sales/proposal-drafts` — rascunho personalizável com objetivo, escopo, valor manual opcional, prazo e condições inseridos pela fundadora.
+- `POST /api/sales/negotiation-drafts` — respostas conservadoras para objeções de preço, prazo, escopo, comparação, pagamento e follow-up. **Sem descontos automáticos**.
+- `PATCH /api/sales/drafts/:id` — alteração de título/conteúdo de propostas pendentes, antes da aprovação.
+- Todos os documentos são gravados em Aprovações para revisão; nenhum e-mail, WhatsApp ou cobrança é emitido.
+- O agente comercial não pode fechar contratos, confirmar agenda, gerar Pix ou exigir dados financeiros. Pagamentos: futura integração com gateway autorizado (checkout, webhooks, conciliação).
