@@ -43,13 +43,13 @@ export function registerZohoEmailRoutes(app:FastifyInstance,prisma:PrismaClient)
   app.get("/api/email/inbox",async()=>{
     const rows=await prisma.mailMessage.findMany({
       orderBy:{receivedAt:"desc"},take:70,
-      include:{approval:{select:{id:true,status:true,title:true}}}
+      include:{approvals:{select:{id:true,status:true,title:true},take:1,orderBy:{createdAt:"asc"}}}
     });
     return rows.map(row=>({
       id:row.id,fromAddress:row.fromAddress,senderName:row.senderName,
       toAddress:row.toAddress,subject:row.subject,preview:row.preview,
       category:row.category,receivedAt:row.receivedAt,
-      approval:row.approval
+      approval:row.approvals[0]??null
     }));
   });
   app.post("/api/email/sync",async(_request,reply)=>{
