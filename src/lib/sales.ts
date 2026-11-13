@@ -95,7 +95,7 @@ export function buildNegotiation(input:z.infer<typeof NegotiationInput>):{title:
   const reply=replies[input.objection];
   return {
     title:`Negociação · ${reply.title} · ${input.clientName}`,
-    summary:`Resposta para objeção: ${reply.title}. Nenhuma alteração comercial aprovada automaticamente.`,
+    summary:`Resposta para objeção: ${reply.title}. Contexto relatado: ${input.context.slice(0,180)}. Nenhuma alteração comercial aprovada automaticamente.`.slice(0,500),
     content:[`Olá, equipe ${input.clientName}! Tudo bem?`,"",reply.body,...(input.agreedTerms?["","Condições já registradas para conferência interna:",input.agreedTerms]:[]),"","Se fizer sentido, seguimos com a revisão do escopo e formalização após aprovação.","","Alessandra | SANSA Oficina Digital"].join("\n")
   };
 }
