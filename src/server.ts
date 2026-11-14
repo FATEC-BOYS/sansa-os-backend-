@@ -15,6 +15,8 @@ import { registerZohoEmailRoutes } from "./routes/zoho-email.js";
 
 import { registerIntegrationHealthRoutes } from "./routes/integration-health.js";
 
+import { registerPricingRoutes } from "./routes/pricing.js";
+
 const prisma = new PrismaClient();
 const app = Fastify({logger: true});
 await app.register(rawBodyPlugin,{field:"rawBody",global:false,encoding:false,runFirst:true});
@@ -168,6 +170,7 @@ registerDiscoveryRoutes(app,prisma);
 registerAgentRoutes(app,prisma);
 registerMetaWhatsAppRoutes(app,prisma);
 registerSalesRoutes(app,prisma);
+registerPricingRoutes(app,prisma);
 registerZohoEmailRoutes(app,prisma);
 
 const port = Number(process.env.PORT ?? 3333);
