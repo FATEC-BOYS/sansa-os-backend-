@@ -3,6 +3,8 @@ import type {PrismaClient} from "@prisma/client";
 import {z} from "zod";
 import {services,ProposalInput,NegotiationInput,buildProposal,buildNegotiation} from "../lib/sales.js";
 
+import {generateProposal} from "../lib/sales-ai.js";
+
 export function registerSalesRoutes(app:FastifyInstance,prisma:PrismaClient){
   app.get("/api/sales/catalog",async()=>({
     services,
@@ -12,7 +14,9 @@ export function registerSalesRoutes(app:FastifyInstance,prisma:PrismaClient){
   app.post("/api/sales/proposal-drafts",async(request,reply)=>{
     const parsed=ProposalInput.safeParse(request.body);
     if(!parsed.success)return reply.code(400).send({error:"Dados da proposta inválidos",details:parsed.error.flatten()});
-    const payload=buildProposal(parsed.data);
+    let payload;
+    try { payload=await generateProposal(parsed.data); }
+    catch { return reply.code(502).send({error:"Não foi possível gerar com IA. Confira a configuração e os créditos da OpenAI ou escolha Modelo padrão."}); }
     const result=await prisma.$transaction(async tx=>{
       const approval=await tx.approval.create({data:{
         agent:"sales",kind:"commercial_proposal",status:"pending",title:payload.title,
