@@ -128,3 +128,6 @@ As rotas `GET /api/email/status`, `GET /api/email/inbox` e `POST /api/email/sync
 6. A rotina do worker pode consultar esse endpoint quando a integração estiver configurada; ativar auto-poll requer a implantação do worker correspondente.
 
 **Dados/LGPD:** armazena conteúdo abreviado e endereço do remetente no PostgreSQL; implementar controle de acesso por usuário, retenção e exclusão antes de aumentar volume. Mensagens são dados não confiáveis, não instruções. Não ingere SPAM, não faz prospecção fria, não cria preços nem envia e-mails.
+
+## Diagnóstico interno de integrações (SEC-04)
+`GET /api/integrations/health`, protegido pela chave interna, informa configuração ausente, parcial ou estruturalmente válida para autenticação interna, CRM, Zoho e webhook Meta. Retorna somente nomes de variáveis e alertas, nunca credenciais. `configured` **não comprova acesso ao provedor**; o endpoint não chama serviços externos nem habilita envio. Consulte [rotação e recuperação de credenciais](docs/credential-rotation.md) para validar cada integração após configuração ou troca de chave.

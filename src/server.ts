@@ -13,6 +13,8 @@ import { registerMetaWhatsAppRoutes } from "./routes/meta-whatsapp.js";
 import { registerSalesRoutes } from "./routes/sales.js";
 import { registerZohoEmailRoutes } from "./routes/zoho-email.js";
 
+import { registerIntegrationHealthRoutes } from "./routes/integration-health.js";
+
 const prisma = new PrismaClient();
 const app = Fastify({logger: true});
 await app.register(rawBodyPlugin,{field:"rawBody",global:false,encoding:false,runFirst:true});
@@ -161,6 +163,7 @@ function requestErrorLog(error: unknown) {
   app.log.error({errorType: error instanceof Error ? error.name : "Unknown"}, "CRM sync failed");
 }
 
+registerIntegrationHealthRoutes(app);
 registerDiscoveryRoutes(app,prisma);
 registerAgentRoutes(app,prisma);
 registerMetaWhatsAppRoutes(app,prisma);
