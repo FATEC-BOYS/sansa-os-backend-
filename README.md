@@ -131,3 +131,6 @@ As rotas `GET /api/email/status`, `GET /api/email/inbox` e `POST /api/email/sync
 
 ## Diagnóstico interno de integrações (SEC-04)
 `GET /api/integrations/health`, protegido pela chave interna, informa configuração ausente, parcial ou estruturalmente válida para autenticação interna, CRM, Zoho e webhook Meta. Retorna somente nomes de variáveis e alertas, nunca credenciais. `configured` **não comprova acesso ao provedor**; o endpoint não chama serviços externos nem habilita envio. Consulte [rotação e recuperação de credenciais](docs/credential-rotation.md) para validar cada integração após configuração ou troca de chave.
+
+## Simulação de orçamento (PRICE-01)
+As rotas internas `POST /api/sales/pricing/simulate` e `POST /api/sales/pricing/estimates` calculam custos, reserva de risco, equilíbrio e preço alvo com parâmetros explícitos, sem preços ou impostos padrão. A segunda salva uma memória versionada na fila de revisão e na auditoria. Não altera contratos/propostas nem aplica descontos. Exemplos, arredondamento e limites em [docs/pricing.md](docs/pricing.md). Disponível por API; interface no painel ainda pendente.
