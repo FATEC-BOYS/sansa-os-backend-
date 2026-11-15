@@ -35,8 +35,9 @@ export function integrationHealth(env: Environment) {
   // The current proposal writer uses OpenAI directly; provider flags do not
   // establish availability. A present key is configuration, never verification.
   const ai = check(['OPENAI_API_KEY'], present('OPENAI_API_KEY'));
-  const integrations = {internal, crm, zoho, meta, ai};
-  const secretNames = ['INTERNAL_API_KEY', 'OPENAI_API_KEY', 'META_APP_SECRET', 'META_VERIFY_TOKEN', 'GOOGLE_SERVICE_ACCOUNT_JSON', 'ZOHO_IMAP_APP_PASSWORD'];
+  const anthropic = check(['ANTHROPIC_API_KEY'], present('ANTHROPIC_API_KEY'));
+  const integrations = {internal, crm, zoho, meta, ai, anthropic};
+  const secretNames = ['INTERNAL_API_KEY', 'OPENAI_API_KEY', 'ANTHROPIC_API_KEY', 'META_WA_ACCESS_TOKEN', 'META_APP_SECRET', 'META_VERIFY_TOKEN', 'GOOGLE_SERVICE_ACCOUNT_JSON', 'ZOHO_IMAP_APP_PASSWORD'];
   const publicSecretPresent = secretNames.some(name =>
     ['NEXT_PUBLIC_', 'VITE_', 'PUBLIC_'].some(prefix => present(prefix + name))
   );
