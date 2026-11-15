@@ -32,11 +32,22 @@ export function integrationHealth(env: Environment) {
   ]);
   const metaNames = ['META_VERIFY_TOKEN', 'META_APP_SECRET', 'META_WA_PHONE_NUMBER_ID'];
   const meta = check(metaNames, metaNames.some(present));
-  const integrations = {internal, crm, zoho, meta};
+  // The current proposal writer uses OpenAI directly; provider flags do not
+  // establish availability. A present key is configuration, never verification.
+  const ai = check(['OPENAI_API_KEY'], present('OPENAI_API_KEY'));
+  const anthropic = check(['ANTHROPIC_API_KEY'], present('ANTHROPIC_API_KEY'));
+  const integrations = {internal, crm, zoho, meta, ai, anthropic};
+  const secretNames = ['INTERNAL_API_KEY', 'OPENAI_API_KEY', 'ANTHROPIC_API_KEY', 'META_WA_ACCESS_TOKEN', 'META_APP_SECRET', 'META_VERIFY_TOKEN', 'GOOGLE_SERVICE_ACCOUNT_JSON', 'ZOHO_IMAP_APP_PASSWORD'];
+  const publicSecretPresent = secretNames.some(name =>
+    ['NEXT_PUBLIC_', 'VITE_', 'PUBLIC_'].some(prefix => present(prefix + name))
+  );
   return {
     scope: 'configuration_only' as const,
     integrations,
-    alerts: Object.entries(integrations).filter(([, value]) => value.state === 'incomplete').map(([service]) => ({service, code: 'configuration_incomplete'})),
+    alerts: [
+      ...Object.entries(integrations).filter(([, value]) => value.state === 'incomplete').map(([service]) => ({service, code: 'configuration_incomplete'})),
+      ...(publicSecretPresent ? [{service: 'security', code: 'public_secret_variable'}] : [])
+    ],
     outbound: {email: false, whatsapp: false},
     providerAccessVerified: false
   };
