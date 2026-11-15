@@ -4,7 +4,7 @@ import {z} from "zod";
 import {services,ProposalInput,NegotiationInput,buildProposal,buildNegotiation} from "../lib/sales.js";
 
 import {registerAiCheckRoutes} from "./ai-check.js";
-import {generateProposal} from "../lib/sales-ai.js";
+import {prepareSalesDraft} from "../lib/sales-preparation.js";
 
 export function registerSalesRoutes(app:FastifyInstance,prisma:PrismaClient){
   registerAiCheckRoutes(app);
@@ -20,14 +20,14 @@ export function registerSalesRoutes(app:FastifyInstance,prisma:PrismaClient){
     if(parsed.data.leadId&&!lead)return reply.code(404).send({error:"Contato do CRM não encontrado. Atualize o CRM e tente novamente."});
     if(lead)parsed.data.clientName=lead.name;
     let payload;
-    try { payload=await generateProposal(parsed.data); }
+    try { payload=await prepareSalesDraft(parsed.data,lead?{type:lead.type,status:lead.status,nextStep:lead.nextStep}:undefined); }
     catch { return reply.code(502).send({error:"Não foi possível gerar com IA. Confira a configuração e os créditos da OpenAI ou escolha Modelo padrão."}); }
     const result=await prisma.$transaction(async tx=>{
       const approval=await tx.approval.create({data:{
-        agent:"sales",kind:"commercial_proposal",status:"pending",title:payload.title,
+        agent:"sales",kind:payload.kind,status:"pending",title:payload.title,
         summary:payload.summary,content:payload.content,leadId:lead?.id
       }});
-      await tx.activity.create({data:{kind:"sales_proposal_drafted",message:`Proposta comercial para ${parsed.data.clientName} criada para revisão. Não enviada.`.slice(0,500)}});
+      await tx.activity.create({data:{kind:"sales_proposal_drafted",message:`${payload.kind==="briefing"?"Briefing":"Proposta comercial"} para ${parsed.data.clientName} criado para revisão. Não enviada.`.slice(0,500)}});
       return approval;
     });
     return reply.code(201).send({approval:result});
@@ -53,7 +53,7 @@ export function registerSalesRoutes(app:FastifyInstance,prisma:PrismaClient){
     }).strict().refine(v=>v.title!==undefined||v.content!==undefined).safeParse(request.body);
     if(!parsed.success)return reply.code(400).send({error:"Edição inválida"});
     const edited=await prisma.approval.updateMany({
-      where:{id:request.params.id,status:"pending",kind:{in:["commercial_proposal","negotiation_reply"]}},
+      where:{id:request.params.id,status:"pending",kind:{in:["commercial_proposal","negotiation_reply","briefing"]}},
       data:parsed.data
     });
     if(!edited.count)return reply.code(409).send({error:"Rascunho não encontrado ou já revisado"});
