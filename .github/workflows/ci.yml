@@ -44,4 +44,6 @@ jobs:
       - run: npm install --no-audit --no-fund
       - run: npm run db:generate
       - run: npm run db:push
+      - run: npx prisma db execute --schema prisma/schema.prisma --file prisma/commercial-preflight.sql
+      - run: npm run db:push
       - run: node --import tsx --test tests/commercial.integration.test.ts
