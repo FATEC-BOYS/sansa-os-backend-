@@ -28,6 +28,7 @@ test('invalid JSON and invalid enabled mail settings are reported without values
 test('configured credentials never imply verified access or enable outbound', async () => {
   const env = {
     OPENAI_API_KEY:'private-openai-key',
+    ANTHROPIC_API_KEY:'private-anthropic-key',
     INTERNAL_API_KEY:'private-internal-key-123456789',
     GOOGLE_SHEET_ID:'private-sheet-id',
     GOOGLE_SERVICE_ACCOUNT_JSON:JSON.stringify({type:'service_account',client_email:'private@example.test', private_key:'-----BEGIN PRIVATE KEY-----private-material'}),
