@@ -46,6 +46,9 @@ alíquota nem recomendação fiscal: os parâmetros são informados pelo operado
 
 Modelos aditivos `Briefing`, `Estimate` e `ProposalVersion`; `Approval` ganha
 referência opcional única à versão. Deploy usa o `prisma db push` já existente.
+Antes dele, `commercial-preflight.sql` prepara a coluna nova e seu índice único
+de forma idempotente em instalações existentes. Duplicatas causam falha; nenhum
+registro é apagado e não se usa `--accept-data-loss`.
 Nenhuma tabela antiga é removida. API continua protegida por `x-api-key`; proxy
 do Next usa a credencial privada e o middleware do painel exige autenticação.
 O sistema atual tem um painel administrativo único, sem acesso por cliente.
