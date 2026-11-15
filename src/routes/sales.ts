@@ -3,9 +3,11 @@ import type {PrismaClient} from "@prisma/client";
 import {z} from "zod";
 import {services,ProposalInput,NegotiationInput,buildProposal,buildNegotiation} from "../lib/sales.js";
 
+import {registerAiCheckRoutes} from "./ai-check.js";
 import {generateProposal} from "../lib/sales-ai.js";
 
 export function registerSalesRoutes(app:FastifyInstance,prisma:PrismaClient){
+  registerAiCheckRoutes(app);
   app.get("/api/sales/catalog",async()=>({
     services,
     pricing:"Nenhum preço fixo ou desconto automático. Investimento digitado pela fundadora.",
