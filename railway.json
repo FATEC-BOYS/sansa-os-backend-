@@ -6,7 +6,7 @@
   },
   "deploy": {
     "preDeployCommand": [
-      "npm run db:push"
+      "npx prisma db execute --schema prisma/schema.prisma --file prisma/commercial-preflight.sql && npm run db:push"
     ],
     "startCommand": "npm run start",
     "healthcheckPath": "/health",
