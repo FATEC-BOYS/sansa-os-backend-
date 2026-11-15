@@ -14,3 +14,18 @@
 6. Se falhar, mantenha a integração desabilitada e corrija permissões/configuração. Não restaure uma credencial comprometida. Uma nova credencial exige nova validação real.
 
 Nunca registre JSON Google, tokens Meta, senha Zoho, cabeçalhos de autenticação ou URLs contendo segredos. O endpoint não retorna e-mails, IDs de planilha, caminhos de arquivos ou conteúdo do CRM.
+
+## IA e variáveis públicas
+
+O diagnóstico inclui `ai`: sem chave privada OpenAI, `disabled`; com chave,
+`configured`. Confirme acesso usando o teste explícito de conexão da IA,
+que pode consumir créditos. Este healthcheck não chama o provedor.
+
+O alerta `public_secret_variable` detecta aliases dos segredos conhecidos com
+prefixos `NEXT_PUBLIC_`, `VITE_` e `PUBLIC_`, sem retornar nomes dinâmicos ou
+valores. Não habilita a integração nem corrige a exposição automaticamente.
+Remova o alias público, revogue a chave exposta, configure a substituta apenas
+no servidor e reconstrua o frontend para remover o valor do bundle novo.
+Bundles antigos podem continuar em caches: apagar a variável não substitui a
+revogação. A API enxerga apenas seu próprio ambiente; confira também frontend,
+worker e histórico do repositório. Este checklist não é uma auditoria completa.
