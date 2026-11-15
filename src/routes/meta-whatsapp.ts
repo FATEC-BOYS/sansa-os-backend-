@@ -142,16 +142,37 @@ export function registerMetaWhatsAppRoutes(app:FastifyInstance,prisma:PrismaClie
         }
       }
     }
+    await prisma.activity.create({data:{
+      kind:"whatsapp_webhook_verified",
+      message:JSON.stringify({received,duplicates,ignored})
+    }});
     return reply.code(200).send({ok:true,received,duplicates,ignored});
   });
 
   // These internal endpoints still require INTERNAL_API_KEY via global hook.
-  app.get("/api/whatsapp/status",async()=>({
-    integration:"meta_whatsapp_cloud_api",
-    webhookReady:Boolean(process.env.META_VERIFY_TOKEN&&process.env.META_APP_SECRET&&process.env.META_WA_PHONE_NUMBER_ID),
-    outboundEnabled:false,
-    policy:"Inbound verified and stored; drafts only, no automated sends"
-  }));
+  app.get("/api/whatsapp/status",async()=>{
+    const required=["META_VERIFY_TOKEN","META_APP_SECRET","META_WA_PHONE_NUMBER_ID"];
+    const missing=required.filter(name=>!process.env[name]?.trim());
+    const latest=await prisma.activity.findFirst({
+      where:{kind:"whatsapp_webhook_verified"},orderBy:{createdAt:"desc"}
+    });
+    let lastVerifiedEvent:null|{at:Date;received:number;duplicates:number;ignored:number}=null;
+    if(latest){
+      try{
+        const counts=z.object({received:z.number().int().nonnegative(),duplicates:z.number().int().nonnegative(),ignored:z.number().int().nonnegative()}).parse(JSON.parse(latest.message));
+        lastVerifiedEvent={at:latest.createdAt,...counts};
+      }catch{/* Ignore malformed historical diagnostics; never expose stored text. */}
+    }
+    return {
+      integration:"meta_whatsapp_cloud_api",
+      webhookReady:missing.length===0,
+      configurationOnly:true,
+      missing,
+      lastVerifiedEvent,
+      outboundEnabled:false,
+      policy:"Credentials configured do not prove valid signatures; verified events are reported separately. Drafts only."
+    };
+  });
   app.get("/api/whatsapp/conversations",async()=>{
     const conversations=await prisma.whatsAppConversation.findMany({
       orderBy:{updatedAt:"desc"},take:50,
