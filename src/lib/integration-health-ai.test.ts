@@ -36,9 +36,16 @@ test('public secret aliases alert without enabling private integrations or leaki
 
 test('all supported public prefixes and secret names are covered', () => {
   for (const prefix of ['NEXT_PUBLIC_', 'VITE_', 'PUBLIC_']) {
-    for (const key of ['INTERNAL_API_KEY', 'OPENAI_API_KEY', 'META_APP_SECRET', 'META_VERIFY_TOKEN', 'GOOGLE_SERVICE_ACCOUNT_JSON', 'ZOHO_IMAP_APP_PASSWORD']) {
+    for (const key of ['INTERNAL_API_KEY', 'OPENAI_API_KEY', 'ANTHROPIC_API_KEY', 'META_WA_ACCESS_TOKEN', 'META_APP_SECRET', 'META_VERIFY_TOKEN', 'GOOGLE_SERVICE_ACCOUNT_JSON', 'ZOHO_IMAP_APP_PASSWORD']) {
       assert.ok(integrationHealth({[prefix + key]: 'fictitious-secret'}).alerts.some(a => a.code === 'public_secret_variable'));
     }
   }
   assert.ok(!integrationHealth({NEXT_PUBLIC_SITE_URL: 'https://example.test'}).alerts.some(a => a.code === 'public_secret_variable'));
+});
+
+test('Claude-only configuration is represented separately from OpenAI', () => {
+  const report = integrationHealth({ANTHROPIC_API_KEY: 'fictitious-claude-key'});
+  assert.equal(report.integrations.anthropic.state, 'configured');
+  assert.equal(report.integrations.ai.state, 'disabled');
+  assert.equal(report.providerAccessVerified, false);
 });
