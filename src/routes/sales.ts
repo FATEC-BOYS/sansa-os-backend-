@@ -53,7 +53,7 @@ export function registerSalesRoutes(app:FastifyInstance,prisma:PrismaClient){
     }).strict().refine(v=>v.title!==undefined||v.content!==undefined).safeParse(request.body);
     if(!parsed.success)return reply.code(400).send({error:"Edição inválida"});
     const edited=await prisma.approval.updateMany({
-      where:{id:request.params.id,status:"pending",kind:{in:["commercial_proposal","negotiation_reply","briefing"]}},
+      where:{id:request.params.id,status:"pending",proposalVersionId:null,kind:{in:["commercial_proposal","negotiation_reply","briefing"]}},
       data:parsed.data
     });
     if(!edited.count)return reply.code(409).send({error:"Rascunho não encontrado ou já revisado"});

@@ -11,6 +11,7 @@ import { registerDiscoveryRoutes } from "./routes/discovery.js";
 import { registerAgentRoutes } from "./routes/agents.js";
 import { registerMetaWhatsAppRoutes } from "./routes/meta-whatsapp.js";
 import { registerSalesRoutes } from "./routes/sales.js";
+import {registerCommercialRoutes} from './routes/commercial.js';
 import { registerZohoEmailRoutes } from "./routes/zoho-email.js";
 
 import { registerIntegrationHealthRoutes } from "./routes/integration-health.js";
@@ -168,6 +169,7 @@ registerDiscoveryRoutes(app,prisma);
 registerAgentRoutes(app,prisma);
 registerMetaWhatsAppRoutes(app,prisma);
 registerSalesRoutes(app,prisma);
+registerCommercialRoutes(app,prisma);
 registerZohoEmailRoutes(app,prisma);
 
 const port = Number(process.env.PORT ?? 3333);
