@@ -8,6 +8,7 @@ datasource db {
 }
 
 model Lead {
+  briefings      Briefing[]
   id             String     @id @default(cuid())
   sourceRow      Int        @unique
   name           String
@@ -30,6 +31,8 @@ model Lead {
 }
 
 model Approval {
+  proposalVersionId String? @unique
+  proposalVersion ProposalVersion? @relation(fields: [proposalVersionId], references: [id], onDelete: Restrict)
   id         String    @id @default(cuid())
   agent      String
   kind       String
@@ -48,6 +51,46 @@ model Approval {
   conversation WhatsAppConversation? @relation(fields: [conversationId], references: [id], onDelete: SetNull)
   mailMessageId String?
   mailMessage MailMessage? @relation(fields: [mailMessageId], references: [id], onDelete: SetNull)
+}
+
+model Briefing {
+  id String @id @default(cuid())
+  leadId String?
+  lead Lead? @relation(fields: [leadId], references: [id], onDelete: SetNull)
+  revision Int @default(1)
+  proposalSequence Int @default(0)
+  data Json
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  estimates Estimate[]
+  proposals ProposalVersion[]
+}
+
+model Estimate {
+  id String @id @default(cuid())
+  briefingId String
+  briefing Briefing @relation(fields: [briefingId], references: [id], onDelete: Restrict)
+  briefingRevision Int
+  parameters Json
+  calculation Json
+  createdAt DateTime @default(now())
+  proposals ProposalVersion[]
+  @@index([briefingId, createdAt])
+}
+
+model ProposalVersion {
+  id String @id @default(cuid())
+  briefingId String
+  briefing Briefing @relation(fields: [briefingId], references: [id], onDelete: Restrict)
+  estimateId String
+  estimate Estimate @relation(fields: [estimateId], references: [id], onDelete: Restrict)
+  number Int
+  briefingRevision Int
+  snapshot Json
+  content String @db.Text
+  createdAt DateTime @default(now())
+  approval Approval?
+  @@unique([briefingId, number])
 }
 
 model LocalProspect {
