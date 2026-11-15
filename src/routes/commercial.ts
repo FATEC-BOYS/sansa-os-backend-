@@ -2,7 +2,7 @@ import type {FastifyInstance} from 'fastify';
 import type {PrismaClient} from '@prisma/client';
 import {z} from 'zod';
 import {BriefingData,briefingMissing,EstimateInput,calculateEstimate,VersionInput,priceReview} from '../lib/commercial.js';
-import {buildProposal,ProposalInput,services} from '../lib/sales.js';
+import {services} from '../lib/sales.js';
 import {renderProposalPdf} from '../lib/proposal-pdf.js';
 
 const SaveInput=z.object({leadId:z.string().min(1).max(100).nullable().default(null),data:BriefingData,expectedRevision:z.number().int().min(1).optional()}).strict();
@@ -64,7 +64,8 @@ export function registerCommercialRoutes(app:FastifyInstance,prisma:PrismaClient
         const review=priceReview(calculation,parameters.taxBps,input.priceCents);
         if(review.negativeMargin)throw new Error('NEGATIVE_MARGIN');
         if(review.discountCents&&!input.discountApproved)throw new Error('DISCOUNT');
-        const payload=buildProposal(ProposalInput.parse({clientName:data.company,service:data.service,package:'sob_medida',goal:data.objective,objectiveConfirmed:true,customScope:data.deliverables,priceCents:input.priceCents,timeline:input.timeline,paymentTerms:input.paymentTerms,dependencies:[data.constraints,input.exclusions].filter(Boolean).join('\n').slice(0,500)}));
+        const serviceName=services.find(s=>s.id===data.service)!.name;
+        const payload={title:`Proposta · ${serviceName} · ${data.company}`,summary:`${serviceName} · ${(input.priceCents/100).toLocaleString('pt-BR',{style:'currency',currency:'BRL'})} · revisão interna pendente.`};
         const content=['SANSA OFICINA DIGITAL | PROPOSTA COMERCIAL',`Para: ${data.company}`,`Serviço: ${services.find(s=>s.id===data.service)!.name}`,`VERSÃO: ${briefing.proposalSequence}`,'','OBJETIVO DO PROJETO',data.objective,'','ENTREGÁVEIS CONFIRMADOS NO BRIEFING',data.deliverables,'',`INVESTIMENTO PROPOSTO: ${(input.priceCents/100).toLocaleString('pt-BR',{style:'currency',currency:'BRL'})}`,`VALIDADE: ${input.validity}`,`PRAZO: ${input.timeline}`,`PAGAMENTO: ${input.paymentTerms}`,'','PREMISSAS E EXCLUSÕES',[data.constraints,input.exclusions].filter(Boolean).join('\n')||'Não confirmadas; alinhar antes da contratação.','',`MARCOS: ${input.milestones||'Não confirmados; alinhar antes da contratação.'}`,`REVISÕES: ${input.revisions||'Não confirmadas; alinhar antes da contratação.'}`,`REFERÊNCIAS: ${data.references||'Não informadas.'}`,`PÚBLICO: ${data.audience}`,'','Aceite do cliente e contrato são etapas separadas da aprovação interna. Esta proposta não constitui contrato assinado nem confirmação de pagamento.','SANSA Oficina Digital | https://sansadigital.com.br/'].join('\n');
         const version=await tx.proposalVersion.create({data:{briefingId:briefing.id,estimateId:estimate.id,number:briefing.proposalSequence,briefingRevision:briefing.revision,snapshot:{briefing:data,conditions:input,priceReview:review,author:'Operador do painel autenticado',parameterVersion:'sansa-cost-v1'},content}});
         const approval=await tx.approval.create({data:{agent:'sales',kind:'commercial_proposal',title:`${payload.title} · v${version.number}`.slice(0,160),summary:payload.summary,content,status:'pending',leadId:briefing.leadId,proposalVersionId:version.id}});
