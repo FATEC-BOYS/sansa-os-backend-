@@ -7,9 +7,9 @@ import {registerSalesRoutes} from "../routes/sales.js";
 test("proposta usa nome autoritativo do CRM e guarda o vínculo sem modificar o contato",async()=>{
   let saved:Record<string,unknown>|undefined;
   const tx={approval:{create:async({data}:{data:Record<string,unknown>})=>{saved=data;return data;}},activity:{create:async()=>({})}};
-  const prisma={lead:{findUnique:async({where}:{where:{id:string}})=>where.id==="existing"?{id:"existing",name:"Nome do CRM"}:null},$transaction:async(fn:(value:typeof tx)=>Promise<unknown>)=>fn(tx)} as unknown as PrismaClient;
+  const prisma={lead:{findUnique:async({where}:{where:{id:string}})=>where.id==="existing"?{id:"existing",name:"Nome do CRM",type:null,status:"Contato",nextStep:null}:null},$transaction:async(fn:(value:typeof tx)=>Promise<unknown>)=>fn(tx)} as unknown as PrismaClient;
   const app=Fastify();registerSalesRoutes(app,prisma);
-  const input={clientName:"Nome adulterado",service:"landing_page",package:"essencial",goal:"Apresentar serviços e receber contatos.",leadId:"existing"};
+  const input={objectiveConfirmed:true,clientName:"Nome adulterado",service:"landing_page",package:"essencial",goal:"Apresentar serviços e receber contatos.",leadId:"existing"};
   try{
     const response=await app.inject({method:"POST",url:"/api/sales/proposal-drafts",payload:input});
     assert.equal(response.statusCode,201);
