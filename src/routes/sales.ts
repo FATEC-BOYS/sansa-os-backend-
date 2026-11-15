@@ -14,13 +14,16 @@ export function registerSalesRoutes(app:FastifyInstance,prisma:PrismaClient){
   app.post("/api/sales/proposal-drafts",async(request,reply)=>{
     const parsed=ProposalInput.safeParse(request.body);
     if(!parsed.success)return reply.code(400).send({error:"Dados da proposta inválidos",details:parsed.error.flatten()});
+    const lead=parsed.data.leadId?await prisma.lead.findUnique({where:{id:parsed.data.leadId}}):null;
+    if(parsed.data.leadId&&!lead)return reply.code(404).send({error:"Contato do CRM não encontrado. Atualize o CRM e tente novamente."});
+    if(lead)parsed.data.clientName=lead.name;
     let payload;
     try { payload=await generateProposal(parsed.data); }
     catch { return reply.code(502).send({error:"Não foi possível gerar com IA. Confira a configuração e os créditos da OpenAI ou escolha Modelo padrão."}); }
     const result=await prisma.$transaction(async tx=>{
       const approval=await tx.approval.create({data:{
         agent:"sales",kind:"commercial_proposal",status:"pending",title:payload.title,
-        summary:payload.summary,content:payload.content
+        summary:payload.summary,content:payload.content,leadId:lead?.id
       }});
       await tx.activity.create({data:{kind:"sales_proposal_drafted",message:`Proposta comercial para ${parsed.data.clientName} criada para revisão. Não enviada.`.slice(0,500)}});
       return approval;

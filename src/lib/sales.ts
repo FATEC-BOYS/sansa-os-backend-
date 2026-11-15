@@ -34,6 +34,7 @@ export const services:Service[]=[
   }}
 ];
 export const ProposalInput=z.object({
+  leadId:z.string().trim().min(1).max(100).optional(),
   generationMode:z.enum(["standard","ai"]).default("standard"),
   clientName:z.string().trim().min(2).max(140),
   service:z.enum(serviceIds),package:z.enum(packages),
