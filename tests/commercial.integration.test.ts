@@ -15,7 +15,7 @@ test('saved briefing -> estimates -> immutable proposal versions with real Postg
     assert.equal(created.statusCode,201);id=created.json().id;
     let saved=(await call('GET','/api/commercial/briefings/'+id)).json();
     assert.ok(saved.missing.includes('objective'));assert.equal(saved.data.budget,'');
-    const complete={...saved.data,objective:'Apresentar serviços',audience:'Comércios locais',deliverables:'Uma landing page responsiva',objectiveConfirmed:true};
+    const complete={...saved.data,objective:'Apresentar serviços',audience:'Comércios locais',deliverables:'Uma landing page responsiva',constraints:'Premissa '.repeat(100),objectiveConfirmed:true};
     const edited=await call('PUT','/api/commercial/briefings/'+id,{data:complete,expectedRevision:1});
     assert.equal(edited.statusCode,200);assert.equal(edited.json().revision,2);
     assert.equal((await call('PUT','/api/commercial/briefings/'+id,{data:complete,expectedRevision:1})).statusCode,409);
@@ -23,11 +23,12 @@ test('saved briefing -> estimates -> immutable proposal versions with real Postg
     assert.equal((await call('POST',`/api/commercial/briefings/${id}/estimates`,{expectedRevision:2,parameters:{...parameters,parametersConfirmed:false}})).statusCode,400);
     const estimate=(await call('POST',`/api/commercial/briefings/${id}/estimates`,{expectedRevision:2,parameters})).json();
     assert.equal(estimate.calculation.recommendedCents,12500);
-    const versionInput={estimateId:estimate.id,expectedRevision:2,priceCents:12000,commercialConfirmed:true,validity:'15 dias',timeline:'30 dias',paymentTerms:'50% no início e 50% na entrega'};
+    const versionInput={estimateId:estimate.id,expectedRevision:2,priceCents:12000,commercialConfirmed:true,validity:'15 dias',timeline:'30 dias',paymentTerms:'50% no início e 50% na entrega',exclusions:'Exclusão '.repeat(100)};
     assert.equal((await call('POST',`/api/commercial/briefings/${id}/versions`,versionInput)).statusCode,400); // explicit discount approval
     assert.equal((await call('POST',`/api/commercial/briefings/${id}/versions`,{...versionInput,priceCents:9999,discountApproved:true})).statusCode,400); // below net cost
     const v1response=await call('POST',`/api/commercial/briefings/${id}/versions`,{...versionInput,discountApproved:true});
     assert.equal(v1response.statusCode,201);const v1=v1response.json();assert.equal(v1.number,1);
+    assert.ok(v1.content.includes(complete.constraints.trim()));assert.ok(v1.content.includes(versionInput.exclusions.trim()));
     assert.equal((await call('PATCH','/api/sales/drafts/'+v1.approval.id,{content:'attempt to overwrite an immutable version'})).statusCode,409);
     const pdf=await call('GET','/api/commercial/versions/'+v1.id+'/pdf');
     assert.equal(pdf.statusCode,200);assert.ok(pdf.headers['content-type']?.includes('application/pdf'));assert.equal(pdf.rawPayload.subarray(0,4).toString(),'%PDF');
