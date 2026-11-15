@@ -34,11 +34,12 @@ export const services:Service[]=[
   }}
 ];
 export const ProposalInput=z.object({
+  objectiveConfirmed:z.boolean().default(false),
   leadId:z.string().trim().min(1).max(100).optional(),
   generationMode:z.enum(["standard","ai"]).default("standard"),
   clientName:z.string().trim().min(2).max(140),
   service:z.enum(serviceIds),package:z.enum(packages),
-  goal:z.string().trim().min(10).max(800),
+  goal:z.string().trim().max(800).default(""),
   customScope:z.string().trim().max(1400).optional().default(""),
   priceCents:z.number().int().min(100).max(100000000).nullable().default(null),
   timeline:z.string().trim().max(300).optional().default(""),
